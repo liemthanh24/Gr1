@@ -6,7 +6,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./ticket-backend/migrations/001_init.sql:/docker-entrypoint-initdb.d/001_init.sql
@@ -19,7 +19,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "6380:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -31,13 +31,13 @@ services:
       context: ./ticket-backend
       dockerfile: Dockerfile
     ports:
-      - "3000:3000"
+      - "3001:3001"
     environment:
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/ticket_db?sslmode=disable
       REDIS_URL: redis://redis:6379
-      PORT: "3000"
+      PORT: "3001"
       JWT_SECRET: super-secret-key-change-in-production
-      FRONTEND_URL: http://localhost:3001
+      FRONTEND_URL: http://localhost:3000
     depends_on:
       postgres:
         condition: service_healthy
