@@ -60,5 +60,17 @@ services:
         condition: service_healthy
     command: ["/worker"]
 
+  frontend:
+    build:
+      context: ./ticket-frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      # If deploying on a VPS, change localhost to your VPS's public IP
+      NEXT_PUBLIC_API_URL: http://localhost:3001/api/v1
+    depends_on:
+      - api
+
 volumes:
   pgdata:
