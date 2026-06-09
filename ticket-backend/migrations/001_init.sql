@@ -8,8 +8,14 @@ CREATE TYPE order_status AS ENUM ('pending', 'confirmed', 'cancelled');
 -- 1. Users table
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
+    name VARCHAR(255),
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
+    role VARCHAR(20) DEFAULT 'user',
+    phone VARCHAR(20),
+    cccd VARCHAR(20),
+    dob DATE,
+    address TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -56,6 +62,9 @@ CREATE INDEX idx_tickets_event_seat ON tickets(event_id, seat_code);
 -- =============================================
 -- Seed Data
 -- =============================================
+
+INSERT INTO users (name, email, password_hash, role, phone, cccd, dob, address) VALUES
+('Admin Liem', 'admin@gmail.com', '$2a$10$GEcRBHeKzaY9903bA5AUse5jKwYt8YzGUHkAqOSK1SGS8zhzNqjLO', 'admin', '0123456789', '012345678912', '1990-01-01', 'Hanoi');
 
 INSERT INTO events (name, description, venue, image_url, total_tickets, available_tickets, price, event_date) VALUES
 ('Sơn Tùng M-TP - Sky Tour 2026', 'Đêm nhạc hoành tráng nhất năm với hàng loạt bản hit đình đám. Sân khấu công nghệ LED 360 độ.', 'Sân vận động Mỹ Đình, Hà Nội', '/images/sontung.jpg', 100, 100, 1500000, '2026-07-15 19:30:00'),

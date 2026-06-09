@@ -36,7 +36,20 @@ func AuthRequired(jwtSecret string) fiber.Handler {
 		// Store user info in context
 		c.Locals("user_id", claims.UserID)
 		c.Locals("email", claims.Email)
+		c.Locals("role", claims.Role)
 
+		return c.Next()
+	}
+}
+
+func AdminRequired() fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		role := c.Locals("role")
+		if role != "admin" {
+			return c.Status(fiber.StatusForbidden).JSON(fiber.Map{
+				"error": "Admin access required",
+			})
+		}
 		return c.Next()
 	}
 }

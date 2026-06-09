@@ -20,7 +20,10 @@ func main() {
 	godotenv.Load()
 
 	// Load configuration
-	cfg := config.Load()
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("Failed to load config: %v", err)
+	}
 
 	// Connect to databases
 	pgPool := database.NewPostgresPool(cfg.DatabaseURL)

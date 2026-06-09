@@ -28,15 +28,15 @@ async function fetchAPI<T>(endpoint: string, options: FetchOptions = {}): Promis
 }
 
 // Auth
-export async function register(email: string, password: string) {
-  return fetchAPI<{ token: string; user: { id: number; email: string } }>('/auth/register', {
+export async function register(name: string, email: string, password: string) {
+  return fetchAPI<{ token: string; user: { id: number; name: string; email: string; role: string } }>('/auth/register', {
     method: 'POST',
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ name, email, password }),
   });
 }
 
 export async function login(email: string, password: string) {
-  return fetchAPI<{ token: string; user: { id: number; email: string } }>('/auth/login', {
+  return fetchAPI<{ token: string; user: { id: number; name: string; email: string; role: string; phone?: string; cccd?: string; dob?: string; address?: string } }>('/auth/login', {
     method: 'POST',
     body: JSON.stringify({ email, password }),
   });
@@ -52,21 +52,55 @@ export async function getEvent(id: number, token?: string) {
 }
 
 // Booking
-export async function bookTicket(eventId: number, seatCode: string, token: string) {
-  return fetchAPI<{ order_id: number; message: string }>('/tickets/book', {
+export async function bookTicket(eventId: number, seatCodes: string[], token: string) {
+  return fetchAPI<{ order_ids: number[]; message: string }>('/tickets/book', {
     method: 'POST',
-    body: JSON.stringify({ event_id: eventId, seat_code: seatCode }),
+    body: JSON.stringify({ event_id: eventId, seat_codes: seatCodes }),
     token,
   });
 }
 
 // Orders
+// Profile
+export async function getProfile(token: string) {
+  return fetchAPI<{ user: User }>('/auth/me', { token });
+}
+
+export async function updateProfile(data: Partial<User>, token: string) {
+  return fetchAPI<User>('/auth/profile', {
+    method: 'PUT', body: JSON.stringify(data), token
+  });
+}
+
 export async function getOrderStatus(orderId: number, token: string) {
   return fetchAPI<{ order: Order }>(`/orders/${orderId}/status`, { token });
 }
 
 export async function getUserOrders(token: string) {
   return fetchAPI<{ orders: Order[] }>('/orders', { token });
+}
+
+// Admin
+export async function adminGetEvents(token: string) {
+  return fetchAPI<{ events: Event[] }>('/admin/events', { token });
+}
+
+export async function createEvent(data: Partial<Event>, token: string) {
+  return fetchAPI<Event>('/admin/events', {
+    method: 'POST', body: JSON.stringify(data), token
+  });
+}
+
+export async function updateEvent(id: number, data: Partial<Event>, token: string) {
+  return fetchAPI<Event>(`/admin/events/${id}`, {
+    method: 'PUT', body: JSON.stringify(data), token
+  });
+}
+
+export async function deleteEvent(id: number, token: string) {
+  return fetchAPI<{ message: string }>(`/admin/events/${id}`, {
+    method: 'DELETE', token
+  });
 }
 
 // Types
@@ -87,6 +121,18 @@ export interface Ticket {
   event_id: number;
   seat_code: string;
   is_locked: boolean;
+}
+
+export interface User {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  phone: string;
+  cccd: string;
+  dob: string;
+  address: string;
+  created_at: string;
 }
 
 export interface Order {

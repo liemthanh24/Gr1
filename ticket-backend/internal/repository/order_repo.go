@@ -88,6 +88,15 @@ func (r *OrderRepository) FindByUserID(ctx context.Context, userID int) ([]model
 	return orders, nil
 }
 
+// NullifyEventTicketIDs sets ticket_id = NULL for all orders tied to an event
+func (r *OrderRepository) NullifyEventTicketIDs(ctx context.Context, eventID int) error {
+	_, err := r.pool.Exec(ctx,
+		"UPDATE orders SET ticket_id = NULL WHERE event_id = $1 AND ticket_id IS NOT NULL",
+		eventID,
+	)
+	return err
+}
+
 // Pool returns the underlying pool for transaction use
 func (r *OrderRepository) Pool() *pgxpool.Pool {
 	return r.pool

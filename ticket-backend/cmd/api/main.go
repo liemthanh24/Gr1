@@ -7,9 +7,11 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/joho/godotenv"
@@ -27,7 +29,10 @@ func main() {
 	godotenv.Load()
 
 	// Load configuration
-	cfg := config.Load()
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("Failed to load config: %v", err)
+	}
 
 	// Connect to databases
 	pgPool := database.NewPostgresPool(cfg.DatabaseURL)
@@ -43,8 +48,9 @@ func main() {
 	orderRepo := repository.NewOrderRepository(pgPool)
 
 	// Initialize services
-	authService := services.NewAuthService(userRepo, cfg.JWTSecret)
+	authService := services.NewAuthService(userRepo, redisClient, cfg.JWTSecret)
 	bookingService := services.NewBookingService(eventRepo, ticketRepo, orderRepo, redisClient)
+	mailService := services.NewMailService(cfg.SMTPHost, cfg.SMTPPort, cfg.SMTPUser, cfg.SMTPPass, cfg.SMTPFrom)
 
 	// Load event inventory into Redis
 	if err := bookingService.LoadEventInventory(context.Background()); err != nil {
@@ -52,7 +58,7 @@ func main() {
 	}
 
 	// Initialize handlers
-	authHandler := handlers.NewAuthHandler(authService)
+	authHandler := handlers.NewAuthHandler(authService, mailService)
 	eventHandler := handlers.NewEventHandler(bookingService)
 	ticketHandler := handlers.NewTicketHandler(bookingService)
 
@@ -65,7 +71,7 @@ func main() {
 	app.Use(logger.New())
 	app.Use(recover.New())
 	app.Use(cors.New(cors.Config{
-		AllowOrigins: cfg.FrontendURL + ", http://localhost:3000, http://localhost:3001",
+		AllowOrigins: cfg.FrontendURL,
 		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
 		AllowMethods: "GET, POST, PUT, DELETE, OPTIONS",
 	}))
@@ -78,10 +84,24 @@ func main() {
 	// API v1 routes
 	v1 := app.Group("/api/v1")
 
-	// Auth routes (public)
+	// Auth routes (public) with rate limiting
 	auth := v1.Group("/auth")
+	auth.Use(limiter.New(limiter.Config{
+		Max:        5,
+		Expiration: 1 * time.Minute,
+		KeyGenerator: func(c *fiber.Ctx) string {
+			return c.IP()
+		},
+		LimitReached: func(c *fiber.Ctx) error {
+			return c.Status(fiber.StatusTooManyRequests).JSON(fiber.Map{
+				"error": "Too many requests, please try again later",
+			})
+		},
+	}))
 	auth.Post("/register", authHandler.Register)
 	auth.Post("/login", authHandler.Login)
+	auth.Post("/forgot-password", authHandler.ForgotPassword)
+	auth.Post("/reset-password", authHandler.ResetPassword)
 
 	// Event routes (public)
 	events := v1.Group("/events")
@@ -90,6 +110,18 @@ func main() {
 
 	// Protected routes
 	protected := v1.Group("", middleware.AuthRequired(cfg.JWTSecret))
+
+	// Auth protected routes
+	authProtected := protected.Group("/auth")
+	authProtected.Get("/me", authHandler.GetProfile)
+	authProtected.Put("/profile", authHandler.UpdateProfile)
+
+	// Admin routes
+	admin := protected.Group("/admin", middleware.AdminRequired())
+	admin.Get("/events", eventHandler.AdminListEvents)
+	admin.Post("/events", eventHandler.CreateEvent)
+	admin.Put("/events/:id", eventHandler.UpdateEvent)
+	admin.Delete("/events/:id", eventHandler.DeleteEvent)
 
 	// Ticket booking (protected)
 	protected.Post("/tickets/book", ticketHandler.BookTicket)

@@ -16,8 +16,6 @@ func NewTicketHandler(bookingService *services.BookingService) *TicketHandler {
 	return &TicketHandler{bookingService: bookingService}
 }
 
-// BookTicket godoc
-// POST /api/v1/tickets/book
 func (h *TicketHandler) BookTicket(c *fiber.Ctx) error {
 	userID := c.Locals("user_id").(int)
 
@@ -28,19 +26,14 @@ func (h *TicketHandler) BookTicket(c *fiber.Ctx) error {
 		})
 	}
 
-	if req.EventID == 0 || req.SeatCode == "" {
+	if req.EventID == 0 || len(req.SeatCodes) == 0 {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"error": "event_id and seat_code are required",
+			"error": "event_id and seat_codes are required",
 		})
 	}
 
 	resp, err := h.bookingService.BookTicket(c.Context(), userID, req)
 	if err != nil {
-		if err.Error() == "sold out" {
-			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-				"error": "Hết vé! Sự kiện đã bán hết.",
-			})
-		}
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"error": err.Error(),
 		})

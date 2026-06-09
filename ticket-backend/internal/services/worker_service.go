@@ -65,14 +65,23 @@ func (w *WorkerService) processNext(ctx context.Context) {
 
 	log.Printf("📨 Processing: Order #%d, Event #%d, Seat %s", msg.OrderID, msg.EventID, msg.SeatCode)
 
-	if err := w.processBooking(ctx, msg); err != nil {
-		log.Printf("❌ Failed to process order #%d: %v", msg.OrderID, err)
-		// Mark order as cancelled
-		w.orderRepo.UpdateStatus(ctx, msg.OrderID, "cancelled", nil)
-		// Return ticket to Redis inventory
-		key := fmt.Sprintf("event:%d:tickets", msg.EventID)
-		w.redisClient.Incr(ctx, key)
+	maxRetries := 3
+	var lastErr error
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		lastErr = w.processBooking(ctx, msg)
+		if lastErr == nil {
+			return
+		}
+		log.Printf("⚠️ Retry %d/%d for order #%d: %v", attempt, maxRetries, msg.OrderID, lastErr)
+		if attempt < maxRetries {
+			time.Sleep(time.Duration(attempt) * time.Second)
+		}
 	}
+
+	log.Printf("❌ All %d retries failed for order #%d: %v", maxRetries, msg.OrderID, lastErr)
+	w.orderRepo.UpdateStatus(ctx, msg.OrderID, "cancelled", nil)
+	key := fmt.Sprintf("event:%d:tickets", msg.EventID)
+	w.redisClient.Incr(ctx, key)
 }
 
 func (w *WorkerService) processBooking(ctx context.Context, msg models.BookingMessage) error {

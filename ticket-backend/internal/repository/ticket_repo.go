@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"ticket-backend/internal/models"
 )
@@ -46,6 +47,21 @@ func (r *TicketRepository) FindByEventAndSeat(ctx context.Context, eventID int, 
 		return nil, err
 	}
 	return &t, nil
+}
+
+func (r *TicketRepository) BulkCreate(ctx context.Context, eventID int, seatCodes []string) error {
+	batch := &pgx.Batch{}
+	for _, seatCode := range seatCodes {
+		batch.Queue("INSERT INTO tickets (event_id, seat_code) VALUES ($1, $2)", eventID, seatCode)
+	}
+	br := r.pool.SendBatch(ctx, batch)
+	defer br.Close()
+	for range seatCodes {
+		if _, err := br.Exec(); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (r *TicketRepository) LockTicket(ctx context.Context, ticketID int) error {

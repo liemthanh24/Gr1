@@ -36,7 +36,7 @@ services:
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/ticket_db?sslmode=disable
       REDIS_URL: redis://redis:6379
       PORT: "3001"
-      JWT_SECRET: super-secret-key-change-in-production
+      JWT_SECRET: gr1-ticket-system-jwt-secret-change-in-production-2026
       FRONTEND_URL: http://localhost:3000
     depends_on:
       postgres:
@@ -52,7 +52,7 @@ services:
     environment:
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/ticket_db?sslmode=disable
       REDIS_URL: redis://redis:6379
-      JWT_SECRET: super-secret-key-change-in-production
+      JWT_SECRET: gr1-ticket-system-jwt-secret-change-in-production-2026
     depends_on:
       postgres:
         condition: service_healthy

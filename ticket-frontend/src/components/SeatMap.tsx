@@ -4,12 +4,11 @@ import { Ticket } from '@/lib/api';
 
 interface SeatMapProps {
   tickets: Ticket[];
-  selectedSeat: string | null;
-  onSelectSeat: (seatCode: string) => void;
+  selectedSeats: string[];
+  onToggleSeat: (seatCode: string) => void;
 }
 
-export default function SeatMap({ tickets, selectedSeat, onSelectSeat }: SeatMapProps) {
-  // Group tickets by row (first character of seat_code)
+export default function SeatMap({ tickets, selectedSeats, onToggleSeat }: SeatMapProps) {
   const rows: { [key: string]: Ticket[] } = {};
   tickets.forEach((ticket) => {
     const row = ticket.seat_code.charAt(0);
@@ -17,7 +16,6 @@ export default function SeatMap({ tickets, selectedSeat, onSelectSeat }: SeatMap
     rows[row].push(ticket);
   });
 
-  // Sort rows alphabetically and seats numerically
   const sortedRows = Object.keys(rows).sort();
   sortedRows.forEach((row) => {
     rows[row].sort((a, b) => {
@@ -29,7 +27,6 @@ export default function SeatMap({ tickets, selectedSeat, onSelectSeat }: SeatMap
 
   return (
     <div className="w-full">
-      {/* Stage */}
       <div className="mb-8 flex justify-center">
         <div className="relative">
           <div className="w-64 h-10 bg-gradient-to-r from-purple-500/20 via-cyan-500/30 to-purple-500/20 rounded-b-[50%] border border-purple-500/20 flex items-center justify-center">
@@ -41,7 +38,6 @@ export default function SeatMap({ tickets, selectedSeat, onSelectSeat }: SeatMap
         </div>
       </div>
 
-      {/* Seats */}
       <div className="flex flex-col items-center gap-2">
         {sortedRows.map((row) => (
           <div key={row} className="flex items-center gap-1">
@@ -51,7 +47,7 @@ export default function SeatMap({ tickets, selectedSeat, onSelectSeat }: SeatMap
             <div className="flex gap-1.5">
               {rows[row].map((ticket) => {
                 const seatNum = ticket.seat_code.substring(1);
-                const isSelected = selectedSeat === ticket.seat_code;
+                const isSelected = selectedSeats.includes(ticket.seat_code);
                 const isLocked = ticket.is_locked;
 
                 return (
@@ -64,7 +60,7 @@ export default function SeatMap({ tickets, selectedSeat, onSelectSeat }: SeatMap
                         ? 'seat-selected'
                         : 'seat-available'
                     }`}
-                    onClick={() => !isLocked && onSelectSeat(ticket.seat_code)}
+                    onClick={() => !isLocked && onToggleSeat(ticket.seat_code)}
                     disabled={isLocked}
                     title={isLocked ? 'Đã bán' : `Ghế ${ticket.seat_code}`}
                   >
@@ -80,7 +76,6 @@ export default function SeatMap({ tickets, selectedSeat, onSelectSeat }: SeatMap
         ))}
       </div>
 
-      {/* Legend */}
       <div className="mt-6 flex justify-center gap-6 text-xs text-gray-400">
         <div className="flex items-center gap-2">
           <div className="w-5 h-5 rounded seat-available" />

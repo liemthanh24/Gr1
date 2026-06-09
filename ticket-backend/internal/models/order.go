@@ -15,13 +15,13 @@ type Order struct {
 }
 
 type BookingRequest struct {
-	EventID  int    `json:"event_id" validate:"required"`
-	SeatCode string `json:"seat_code" validate:"required"`
+	EventID   int      `json:"event_id" validate:"required"`
+	SeatCodes []string `json:"seat_codes" validate:"required,min=1,dive,required"`
 }
 
 type BookingResponse struct {
-	OrderID int    `json:"order_id"`
-	Message string `json:"message"`
+	OrderIDs []int  `json:"order_ids"`
+	Message  string `json:"message"`
 }
 
 type BookingMessage struct {

@@ -7,6 +7,7 @@ import { register } from '@/lib/api';
 
 export default function RegisterPage() {
   const router = useRouter();
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -30,7 +31,7 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      const data = await register(email, password);
+      const data = await register(name, email, password);
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
       router.push('/');
@@ -63,6 +64,19 @@ export default function RegisterPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm text-gray-400 mb-1.5">Họ và tên</label>
+              <input
+                id="register-name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="input-field"
+                placeholder="Nguyễn Văn A"
+                required
+              />
+            </div>
+
             <div>
               <label className="block text-sm text-gray-400 mb-1.5">Email</label>
               <input

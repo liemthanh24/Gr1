@@ -14,7 +14,7 @@ export default function EventDetailPage() {
 
   const [event, setEvent] = useState<Event | null>(null);
   const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [selectedSeat, setSelectedSeat] = useState<string | null>(null);
+  const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState(false);
   const [error, setError] = useState('');
@@ -37,6 +37,14 @@ export default function EventDetailPage() {
     if (eventId) fetchEvent();
   }, [eventId]);
 
+  const toggleSeat = (seatCode: string) => {
+    setSelectedSeats(prev =>
+      prev.includes(seatCode)
+        ? prev.filter(s => s !== seatCode)
+        : [...prev, seatCode]
+    );
+  };
+
   const handleBook = async () => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -44,8 +52,8 @@ export default function EventDetailPage() {
       return;
     }
 
-    if (!selectedSeat) {
-      setError('Vui lòng chọn ghế');
+    if (selectedSeats.length === 0) {
+      setError('Vui lòng chọn ít nhất 1 ghế');
       return;
     }
 
@@ -53,9 +61,9 @@ export default function EventDetailPage() {
     setError('');
 
     try {
-      const data = await bookTicket(eventId, selectedSeat, token);
+      const data = await bookTicket(eventId, selectedSeats, token);
       setBookingSuccess(true);
-      startPolling(data.order_id);
+      startPolling(data.order_ids[0]);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Đặt vé thất bại');
     } finally {
@@ -146,8 +154,8 @@ export default function EventDetailPage() {
               </h2>
               <SeatMap
                 tickets={tickets}
-                selectedSeat={selectedSeat}
-                onSelectSeat={setSelectedSeat}
+                selectedSeats={selectedSeats}
+                onToggleSeat={toggleSeat}
               />
             </div>
           </div>
@@ -190,7 +198,7 @@ export default function EventDetailPage() {
                           <button
                             onClick={() => {
                               setBookingSuccess(false);
-                              setSelectedSeat(null);
+                              setSelectedSeats([]);
                             }}
                             className="btn-secondary mt-4 w-full text-sm"
                           >
@@ -203,13 +211,16 @@ export default function EventDetailPage() {
                 </div>
               ) : (
                 <>
-                  {/* Selected seat info */}
                   <div className="p-4 rounded-xl bg-white/3 border border-white/5 mb-4">
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-sm text-gray-400">Ghế đã chọn</span>
                       <span className="text-lg font-bold text-cyan-400">
-                        {selectedSeat || '—'}
+                        {selectedSeats.length > 0 ? selectedSeats.join(', ') : '—'}
                       </span>
+                    </div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm text-gray-400">Số lượng</span>
+                      <span className="text-sm text-gray-300">{selectedSeats.length} vé</span>
                     </div>
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-sm text-gray-400">Sự kiện</span>
@@ -220,7 +231,7 @@ export default function EventDetailPage() {
                     <div className="border-t border-white/5 pt-2 mt-2 flex justify-between items-center">
                       <span className="text-sm text-gray-400">Tổng cộng</span>
                       <span className="text-xl font-bold gradient-text">
-                        {formatPrice(event.price)}
+                        {formatPrice(event.price * selectedSeats.length)}
                       </span>
                     </div>
                   </div>
@@ -236,7 +247,7 @@ export default function EventDetailPage() {
                   <button
                     id="book-ticket-btn"
                     onClick={handleBook}
-                    disabled={!selectedSeat || booking}
+                    disabled={selectedSeats.length === 0 || booking}
                     className="btn-primary w-full flex items-center justify-center gap-2 text-base"
                   >
                     {booking ? (
@@ -245,7 +256,7 @@ export default function EventDetailPage() {
                         Đang xử lý...
                       </>
                     ) : (
-                      '⚡ Đặt vé ngay'
+                      <>⚡ Đặt {selectedSeats.length} vé ngay</>
                     )}
                   </button>
 

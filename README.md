@@ -64,7 +64,7 @@ docker-compose up --build
 Sẽ khởi chạy:
 - PostgreSQL (port 5432) - tự động chạy migration & seed
 - Redis (port 6379)
-- API Server (port 3000)
+- API Server (port 3001)
 - Worker (background)
 
 Sau đó chạy frontend:
@@ -72,7 +72,7 @@ Sau đó chạy frontend:
 cd ticket-frontend
 npm run dev
 ```
-→ Mở http://localhost:3001
+→ Mở http://localhost:3000
 
 ### Option 2: Chạy thủ công
 
