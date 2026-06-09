@@ -40,10 +40,20 @@ func runMigrations(pool *pgxpool.Pool) {
 		return
 	}
 
-	statements := strings.Split(string(data), ";")
+	lines := strings.Split(string(data), "\n")
+	var cleanSQL []string
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "--") {
+			continue
+		}
+		cleanSQL = append(cleanSQL, line)
+	}
+
+	statements := strings.Split(strings.Join(cleanSQL, "\n"), ";")
 	for _, stmt := range statements {
 		stmt = strings.TrimSpace(stmt)
-		if stmt == "" || strings.HasPrefix(stmt, "--") {
+		if stmt == "" {
 			continue
 		}
 		_, err := pool.Exec(context.Background(), stmt)
@@ -55,4 +65,5 @@ func runMigrations(pool *pgxpool.Pool) {
 			log.Printf("⚠️  Migration warning: %v", err)
 		}
 	}
+	log.Println("✅ Migrations applied")
 }
