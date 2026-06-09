@@ -63,13 +63,21 @@ CREATE INDEX idx_tickets_event_seat ON tickets(event_id, seat_code);
 -- Seed Data
 -- =============================================
 
-INSERT INTO users (name, email, password_hash, role, phone, cccd, dob, address) VALUES
-('Admin Liem', 'admin@gmail.com', '$2a$10$GEcRBHeKzaY9903bA5AUse5jKwYt8YzGUHkAqOSK1SGS8zhzNqjLO', 'admin', '0123456789', '012345678912', '1990-01-01', 'Hanoi');
+INSERT INTO users (name, email, password_hash, role, phone, cccd, dob, address)
+SELECT 'Admin Liem', 'admin@gmail.com', '$2a$10$GEcRBHeKzaY9903bA5AUse5jKwYt8YzGUHkAqOSK1SGS8zhzNqjLO', 'admin', '0123456789', '012345678912', '1990-01-01', 'Hanoi'
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE email = 'admin@gmail.com');
 
-INSERT INTO events (name, description, venue, image_url, total_tickets, available_tickets, price, event_date) VALUES
-('Sơn Tùng M-TP - Sky Tour 2026', 'Đêm nhạc hoành tráng nhất năm với hàng loạt bản hit đình đám. Sân khấu công nghệ LED 360 độ.', 'Sân vận động Mỹ Đình, Hà Nội', '/images/sontung.jpg', 100, 100, 1500000, '2026-07-15 19:30:00'),
-('BLACKPINK World Tour - Hà Nội', 'BLACKPINK lần đầu biểu diễn tại Việt Nam trong khuôn khổ Born Pink World Tour. Không thể bỏ lỡ!', 'Trung tâm Hội nghị Quốc gia, Hà Nội', '/images/blackpink.jpg', 200, 200, 2500000, '2026-08-20 20:00:00'),
-('Đen Vâu - Acoustic Night', 'Một đêm nhạc acoustic ấm cúng cùng Đen Vâu. Không gian nhỏ, cảm xúc lớn.', 'Nhà hát Lớn Hà Nội', '/images/denvau.jpg', 50, 50, 800000, '2026-09-10 19:00:00');
+INSERT INTO events (name, description, venue, image_url, total_tickets, available_tickets, price, event_date)
+SELECT 'Sơn Tùng M-TP - Sky Tour 2026', 'Đêm nhạc hoành tráng nhất năm với hàng loạt bản hit đình đám. Sân khấu công nghệ LED 360 độ.', 'Sân vận động Mỹ Đình, Hà Nội', '/images/sontung.jpg', 100, 100, 1500000, '2026-07-15 19:30:00'
+WHERE NOT EXISTS (SELECT 1 FROM events WHERE name = 'Sơn Tùng M-TP - Sky Tour 2026');
+
+INSERT INTO events (name, description, venue, image_url, total_tickets, available_tickets, price, event_date)
+SELECT 'BLACKPINK World Tour - Hà Nội', 'BLACKPINK lần đầu biểu diễn tại Việt Nam trong khuôn khổ Born Pink World Tour. Không thể bỏ lỡ!', 'Trung tâm Hội nghị Quốc gia, Hà Nội', '/images/blackpink.jpg', 200, 200, 2500000, '2026-08-20 20:00:00'
+WHERE NOT EXISTS (SELECT 1 FROM events WHERE name = 'BLACKPINK World Tour - Hà Nội');
+
+INSERT INTO events (name, description, venue, image_url, total_tickets, available_tickets, price, event_date)
+SELECT 'Đen Vâu - Acoustic Night', 'Một đêm nhạc acoustic ấm cúng cùng Đen Vâu. Không gian nhỏ, cảm xúc lớn.', 'Nhà hát Lớn Hà Nội', '/images/denvau.jpg', 50, 50, 800000, '2026-09-10 19:00:00'
+WHERE NOT EXISTS (SELECT 1 FROM events WHERE name = 'Đen Vâu - Acoustic Night');
 
 -- Generate 100 tickets for Event 1 (A1-J10)
 INSERT INTO tickets (event_id, seat_code)

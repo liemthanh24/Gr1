@@ -65,5 +65,18 @@ func runMigrations(pool *pgxpool.Pool) {
 			log.Printf("⚠️  Migration warning: %v", err)
 		}
 	}
-	log.Println("✅ Migrations applied")
+
+	pool.Exec(context.Background(), `
+		DELETE FROM tickets WHERE event_id IN (
+			SELECT id FROM events WHERE id NOT IN (SELECT MIN(id) FROM events GROUP BY name)
+		)`)
+	pool.Exec(context.Background(), `
+		DELETE FROM orders WHERE event_id IN (
+			SELECT id FROM events WHERE id NOT IN (SELECT MIN(id) FROM events GROUP BY name)
+		)`)
+	pool.Exec(context.Background(), `
+		DELETE FROM events WHERE id NOT IN (
+			SELECT MIN(id) FROM events GROUP BY name
+		)`)
 }
+
