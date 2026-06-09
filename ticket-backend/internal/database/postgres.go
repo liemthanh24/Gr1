@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
+	"strings"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -27,5 +29,30 @@ func NewPostgresPool(databaseURL string) *pgxpool.Pool {
 	}
 
 	fmt.Println("✅ Connected to PostgreSQL")
+	runMigrations(pool)
 	return pool
+}
+
+func runMigrations(pool *pgxpool.Pool) {
+	data, err := os.ReadFile("migrations/001_init.sql")
+	if err != nil {
+		log.Printf("⚠️  Migration file not found: %v", err)
+		return
+	}
+
+	statements := strings.Split(string(data), ";")
+	for _, stmt := range statements {
+		stmt = strings.TrimSpace(stmt)
+		if stmt == "" || strings.HasPrefix(stmt, "--") {
+			continue
+		}
+		_, err := pool.Exec(context.Background(), stmt)
+		if err != nil {
+			if strings.Contains(err.Error(), "already exists") ||
+				strings.Contains(err.Error(), "duplicate key") {
+				continue
+			}
+			log.Printf("⚠️  Migration warning: %v", err)
+		}
+	}
 }
