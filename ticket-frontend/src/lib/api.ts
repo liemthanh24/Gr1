@@ -80,7 +80,34 @@ export async function getUserOrders(token: string) {
   return fetchAPI<{ orders: Order[] }>('/orders', { token });
 }
 
+// Admin Types
+export interface AdminStats {
+  total_events: number;
+  total_orders: number;
+  total_users: number;
+  total_revenue: number;
+  orders_by_status: Record<string, number>;
+}
+
 // Admin
+export async function adminGetStats(token: string) {
+  return fetchAPI<AdminStats>('/admin/stats', { token });
+}
+
+export async function adminGetAllOrders(token: string) {
+  return fetchAPI<{ orders: Order[] }>('/admin/orders', { token });
+}
+
+export async function adminGetAllUsers(token: string) {
+  return fetchAPI<{ users: User[] }>('/admin/users', { token });
+}
+
+export async function adminUpdateUserRole(id: number, role: string, token: string) {
+  return fetchAPI<User>(`/admin/users/${id}/role`, {
+    method: 'PUT', body: JSON.stringify({ role }), token,
+  });
+}
+
 export async function adminGetEvents(token: string) {
   return fetchAPI<{ events: Event[] }>('/admin/events', { token });
 }

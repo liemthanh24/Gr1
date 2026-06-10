@@ -61,6 +61,7 @@ func main() {
 	authHandler := handlers.NewAuthHandler(authService, mailService)
 	eventHandler := handlers.NewEventHandler(bookingService)
 	ticketHandler := handlers.NewTicketHandler(bookingService)
+	adminHandler := handlers.NewAdminHandler(bookingService, userRepo, orderRepo)
 
 	// Create Fiber app
 	app := fiber.New(fiber.Config{
@@ -118,6 +119,10 @@ func main() {
 
 	// Admin routes
 	admin := protected.Group("/admin", middleware.AdminRequired())
+	admin.Get("/stats", adminHandler.GetStats)
+	admin.Get("/orders", adminHandler.ListAllOrders)
+	admin.Get("/users", adminHandler.ListAllUsers)
+	admin.Put("/users/:id/role", adminHandler.UpdateUserRole)
 	admin.Get("/events", eventHandler.AdminListEvents)
 	admin.Post("/events", eventHandler.CreateEvent)
 	admin.Put("/events/:id", eventHandler.UpdateEvent)

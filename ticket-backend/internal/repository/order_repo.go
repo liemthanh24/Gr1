@@ -88,6 +88,66 @@ func (r *OrderRepository) FindByUserID(ctx context.Context, userID int) ([]model
 	return orders, nil
 }
 
+func (r *OrderRepository) FindAll(ctx context.Context) ([]models.Order, error) {
+	rows, err := r.pool.Query(ctx,
+		`SELECT o.id, o.user_id, o.event_id, o.ticket_id, o.seat_code, o.status, o.created_at,
+		 COALESCE(e.name, '') as event_name
+		 FROM orders o LEFT JOIN events e ON o.event_id = e.id
+		 ORDER BY o.created_at DESC`,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var orders []models.Order
+	for rows.Next() {
+		var o models.Order
+		var ticketID *int
+		if err := rows.Scan(&o.ID, &o.UserID, &o.EventID, &ticketID, &o.SeatCode, &o.Status, &o.CreatedAt, &o.EventName); err != nil {
+			return nil, err
+		}
+		o.TicketID = ticketID
+		orders = append(orders, o)
+	}
+	return orders, nil
+}
+
+func (r *OrderRepository) CountAll(ctx context.Context) (int, error) {
+	var count int
+	err := r.pool.QueryRow(ctx, "SELECT COUNT(*) FROM orders").Scan(&count)
+	return count, err
+}
+
+func (r *OrderRepository) CountByStatus(ctx context.Context) (map[string]int, error) {
+	rows, err := r.pool.Query(ctx, "SELECT status::text, COUNT(*) FROM orders GROUP BY status")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make(map[string]int)
+	for rows.Next() {
+		var status string
+		var count int
+		if err := rows.Scan(&status, &count); err != nil {
+			return nil, err
+		}
+		result[status] = count
+	}
+	return result, nil
+}
+
+func (r *OrderRepository) SumConfirmedRevenue(ctx context.Context) (float64, error) {
+	var total float64
+	err := r.pool.QueryRow(ctx,
+		`SELECT COALESCE(SUM(e.price), 0) FROM orders o
+		 JOIN events e ON o.event_id = e.id
+		 WHERE o.status = 'confirmed'`,
+	).Scan(&total)
+	return total, err
+}
+
 // NullifyEventTicketIDs sets ticket_id = NULL for all orders tied to an event
 func (r *OrderRepository) NullifyEventTicketIDs(ctx context.Context, eventID int) error {
 	_, err := r.pool.Exec(ctx,

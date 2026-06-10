@@ -73,6 +73,32 @@ func (r *UserRepository) UpdatePassword(ctx context.Context, id int, passwordHas
 	return err
 }
 
+func (r *UserRepository) FindAll(ctx context.Context) ([]models.User, error) {
+	rows, err := r.pool.Query(ctx,
+		"SELECT id, name, email, role, COALESCE(phone, ''), COALESCE(cccd, ''), CAST(COALESCE(dob, '1900-01-01') AS TEXT), COALESCE(address, ''), created_at FROM users ORDER BY created_at DESC",
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []models.User
+	for rows.Next() {
+		var u models.User
+		if err := rows.Scan(&u.ID, &u.Name, &u.Email, &u.Role, &u.Phone, &u.CCCD, &u.DOB, &u.Address, &u.CreatedAt); err != nil {
+			return nil, err
+		}
+		users = append(users, u)
+	}
+	return users, nil
+}
+
+func (r *UserRepository) CountAll(ctx context.Context) (int, error) {
+	var count int
+	err := r.pool.QueryRow(ctx, "SELECT COUNT(*) FROM users").Scan(&count)
+	return count, err
+}
+
 func (r *UserRepository) UpdateRole(ctx context.Context, id int, role string) (*models.User, error) {
 	var user models.User
 	err := r.pool.QueryRow(ctx,

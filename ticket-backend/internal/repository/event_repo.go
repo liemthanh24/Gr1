@@ -77,6 +77,12 @@ func (r *EventRepository) Update(ctx context.Context, id int, e models.Event) (*
 	return &e, nil
 }
 
+func (r *EventRepository) CountAll(ctx context.Context) (int, error) {
+	var count int
+	err := r.pool.QueryRow(ctx, "SELECT COUNT(*) FROM events").Scan(&count)
+	return count, err
+}
+
 func (r *EventRepository) Delete(ctx context.Context, id int) error {
 	_, err := r.pool.Exec(ctx, "DELETE FROM events WHERE id = $1", id)
 	return err

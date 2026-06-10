@@ -122,6 +122,11 @@ func (s *BookingService) GetUserOrders(ctx context.Context, userID int) ([]model
 	return s.orderRepo.FindByUserID(ctx, userID)
 }
 
+// GetTotalEvents returns the total number of events
+func (s *BookingService) GetTotalEvents(ctx context.Context) (int, error) {
+	return s.eventRepo.CountAll(ctx)
+}
+
 // GetEvents returns all events
 func (s *BookingService) GetEvents(ctx context.Context) ([]models.Event, error) {
 	return s.eventRepo.FindAll(ctx)
