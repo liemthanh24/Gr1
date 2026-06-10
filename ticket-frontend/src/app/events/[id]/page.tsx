@@ -15,6 +15,7 @@ export default function EventDetailPage() {
   const [event, setEvent] = useState<Event | null>(null);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [booking, setBooking] = useState(false);
   const [error, setError] = useState('');
@@ -23,6 +24,11 @@ export default function EventDetailPage() {
   const { order, isPolling, startPolling } = usePolling(2000);
 
   useEffect(() => {
+    try {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      setIsAdmin(user?.role === 'admin');
+    } catch {}
+
     async function fetchEvent() {
       try {
         const data = await getEvent(eventId);
@@ -145,129 +151,135 @@ export default function EventDetailPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Seat Map */}
-          <div className="lg:col-span-2">
-            <div className="glass p-6 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
-              <h2 className="text-lg font-bold mb-6 flex items-center gap-2">
-                <span>💺</span> Chọn ghế ngồi
-              </h2>
-              <SeatMap
-                tickets={tickets}
-                selectedSeats={selectedSeats}
-                onToggleSeat={toggleSeat}
-              />
-            </div>
+        {isAdmin ? (
+          <div className="glass p-8 text-center animate-fade-in-up">
+            <div className="text-4xl mb-4">🔧</div>
+            <h2 className="text-xl font-bold mb-2">Chế độ quản trị</h2>
+            <p className="text-gray-400 mb-4">Bạn đang đăng nhập với tài khoản admin. Chỉ người dùng thường mới có thể đặt vé.</p>
+            <button onClick={() => router.push('/admin')} className="btn-primary">
+              Về Dashboard Admin →
+            </button>
           </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2">
+              <div className="glass p-6 animate-fade-in-up" style={{ animationDelay: '100ms' }}>
+                <h2 className="text-lg font-bold mb-6 flex items-center gap-2">
+                  <span>💺</span> Chọn ghế ngồi
+                </h2>
+                <SeatMap
+                  tickets={tickets}
+                  selectedSeats={selectedSeats}
+                  onToggleSeat={toggleSeat}
+                />
+              </div>
+            </div>
 
-          {/* Booking Panel */}
-          <div className="lg:col-span-1">
-            <div className="glass-strong p-6 sticky top-24 animate-fade-in-up" style={{ animationDelay: '200ms' }}>
-              <h2 className="text-lg font-bold mb-4">Thông tin đặt vé</h2>
+            <div className="lg:col-span-1">
+              <div className="glass-strong p-6 sticky top-24 animate-fade-in-up" style={{ animationDelay: '200ms' }}>
+                <h2 className="text-lg font-bold mb-4">Thông tin đặt vé</h2>
 
-              {/* Booking Success - Polling */}
-              {bookingSuccess ? (
-                <div className="space-y-4">
-                  <div className="p-4 rounded-xl bg-gradient-to-b from-purple-500/10 to-transparent border border-purple-500/20 text-center">
-                    {isPolling ? (
-                      <>
-                        <div className="spinner mx-auto mb-3 !w-8 !h-8" />
-                        <p className="text-sm text-gray-300">Đang xử lý đơn hàng...</p>
-                        <p className="text-xs text-gray-500 mt-1">Vui lòng chờ trong giây lát</p>
-                      </>
-                    ) : order ? (
-                      <>
-                        <div className="text-3xl mb-2">
-                          {order.status === 'confirmed' ? '🎉' : '😔'}
-                        </div>
-                        <OrderStatusBadge status={order.status} />
-                        <p className="text-sm text-gray-400 mt-3">
-                          {order.status === 'confirmed'
-                            ? `Ghế ${order.seat_code} đã được xác nhận!`
-                            : 'Ghế đã được người khác đặt trước. Vui lòng thử lại.'}
-                        </p>
-                        {order.status === 'confirmed' && (
-                          <button
-                            onClick={() => router.push('/dashboard')}
-                            className="btn-primary mt-4 w-full text-sm"
-                          >
-                            Xem đơn hàng →
-                          </button>
-                        )}
-                        {order.status === 'cancelled' && (
-                          <button
-                            onClick={() => {
-                              setBookingSuccess(false);
-                              setSelectedSeats([]);
-                            }}
-                            className="btn-secondary mt-4 w-full text-sm"
-                          >
-                            Chọn ghế khác
-                          </button>
-                        )}
-                      </>
-                    ) : null}
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <div className="p-4 rounded-xl bg-white/3 border border-white/5 mb-4">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm text-gray-400">Ghế đã chọn</span>
-                      <span className="text-lg font-bold text-cyan-400">
-                        {selectedSeats.length > 0 ? selectedSeats.join(', ') : '—'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm text-gray-400">Số lượng</span>
-                      <span className="text-sm text-gray-300">{selectedSeats.length} vé</span>
-                    </div>
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm text-gray-400">Sự kiện</span>
-                      <span className="text-sm text-gray-300 text-right max-w-[180px] truncate">
-                        {event.name}
-                      </span>
-                    </div>
-                    <div className="border-t border-white/5 pt-2 mt-2 flex justify-between items-center">
-                      <span className="text-sm text-gray-400">Tổng cộng</span>
-                      <span className="text-xl font-bold gradient-text">
-                        {formatPrice(event.price * selectedSeats.length)}
-                      </span>
+                {bookingSuccess ? (
+                  <div className="space-y-4">
+                    <div className="p-4 rounded-xl bg-gradient-to-b from-purple-500/10 to-transparent border border-purple-500/20 text-center">
+                      {isPolling ? (
+                        <>
+                          <div className="spinner mx-auto mb-3 !w-8 !h-8" />
+                          <p className="text-sm text-gray-300">Đang xử lý đơn hàng...</p>
+                          <p className="text-xs text-gray-500 mt-1">Vui lòng chờ trong giây lát</p>
+                        </>
+                      ) : order ? (
+                        <>
+                          <div className="text-3xl mb-2">
+                            {order.status === 'confirmed' ? '🎉' : '😔'}
+                          </div>
+                          <OrderStatusBadge status={order.status} />
+                          <p className="text-sm text-gray-400 mt-3">
+                            {order.status === 'confirmed'
+                              ? `Ghế ${order.seat_code} đã được xác nhận!`
+                              : 'Ghế đã được người khác đặt trước. Vui lòng thử lại.'}
+                          </p>
+                          {order.status === 'confirmed' && (
+                            <button
+                              onClick={() => router.push('/dashboard')}
+                              className="btn-primary mt-4 w-full text-sm"
+                            >
+                              Xem đơn hàng →
+                            </button>
+                          )}
+                          {order.status === 'cancelled' && (
+                            <button
+                              onClick={() => {
+                                setBookingSuccess(false);
+                                setSelectedSeats([]);
+                              }}
+                              className="btn-secondary mt-4 w-full text-sm"
+                            >
+                              Chọn ghế khác
+                            </button>
+                          )}
+                        </>
+                      ) : null}
                     </div>
                   </div>
-
-                  {/* Error */}
-                  {error && (
-                    <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm text-center animate-fade-in">
-                      {error}
+                ) : (
+                  <>
+                    <div className="p-4 rounded-xl bg-white/3 border border-white/5 mb-4">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm text-gray-400">Ghế đã chọn</span>
+                        <span className="text-lg font-bold text-cyan-400">
+                          {selectedSeats.length > 0 ? selectedSeats.join(', ') : '—'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm text-gray-400">Số lượng</span>
+                        <span className="text-sm text-gray-300">{selectedSeats.length} vé</span>
+                      </div>
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm text-gray-400">Sự kiện</span>
+                        <span className="text-sm text-gray-300 text-right max-w-[180px] truncate">
+                          {event.name}
+                        </span>
+                      </div>
+                      <div className="border-t border-white/5 pt-2 mt-2 flex justify-between items-center">
+                        <span className="text-sm text-gray-400">Tổng cộng</span>
+                        <span className="text-xl font-bold gradient-text">
+                          {formatPrice(event.price * selectedSeats.length)}
+                        </span>
+                      </div>
                     </div>
-                  )}
 
-                  {/* Book button */}
-                  <button
-                    id="book-ticket-btn"
-                    onClick={handleBook}
-                    disabled={selectedSeats.length === 0 || booking}
-                    className="btn-primary w-full flex items-center justify-center gap-2 text-base"
-                  >
-                    {booking ? (
-                      <>
-                        <div className="spinner !w-4 !h-4 !border-2" />
-                        Đang xử lý...
-                      </>
-                    ) : (
-                      <>⚡ Đặt {selectedSeats.length} vé ngay</>
+                    {error && (
+                      <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm text-center animate-fade-in">
+                        {error}
+                      </div>
                     )}
-                  </button>
 
-                  <p className="text-xs text-gray-600 text-center mt-3">
-                    Đơn hàng sẽ được xử lý tự động trong vài giây
-                  </p>
-                </>
-              )}
+                    <button
+                      id="book-ticket-btn"
+                      onClick={handleBook}
+                      disabled={selectedSeats.length === 0 || booking}
+                      className="btn-primary w-full flex items-center justify-center gap-2 text-base"
+                    >
+                      {booking ? (
+                        <>
+                          <div className="spinner !w-4 !h-4 !border-2" />
+                          Đang xử lý...
+                        </>
+                      ) : (
+                        <>⚡ Đặt {selectedSeats.length} vé ngay</>
+                      )}
+                    </button>
+
+                    <p className="text-xs text-gray-600 text-center mt-3">
+                      Đơn hàng sẽ được xử lý tự động trong vài giây
+                    </p>
+                  </>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
