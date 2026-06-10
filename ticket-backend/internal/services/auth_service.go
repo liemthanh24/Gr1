@@ -33,7 +33,7 @@ func (s *AuthService) Register(ctx context.Context, req models.RegisterRequest) 
 
 	user, err := s.userRepo.Create(ctx, req.Email, hash, req.Name)
 	if err != nil {
-		return nil, fmt.Errorf("registration failed: %w", err)
+		return nil, errors.New("email already exists")
 	}
 
 	token, err := utils.GenerateToken(user.ID, user.Email, user.Role, s.jwtSecret)
