@@ -1,4 +1,4 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api/v1';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
 interface FetchOptions extends RequestInit {
   token?: string;
@@ -6,20 +6,20 @@ interface FetchOptions extends RequestInit {
 
 async function fetchAPI<T>(endpoint: string, options: FetchOptions = {}): Promise<T> {
   const { token, ...fetchOptions } = options;
-  
+
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(options.headers || {}),
   };
 
-  const res = await fetch(`${API_BASE}${endpoint}`, {
+  const res = await fetch(`${API_BASE}/api/v1${endpoint}`, {
     ...fetchOptions,
     headers,
   });
 
   const data = await res.json();
-  
+
   if (!res.ok) {
     throw new Error(data.error || 'Something went wrong');
   }
